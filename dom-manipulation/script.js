@@ -218,19 +218,49 @@ async function fetchQuotesFromServer() {
   try {
     // Simulate fetching from a real API endpoint like JSONPlaceholder
     // In a real application, this would be something like:
-    // const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+    // const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+    //   method: 'GET',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Accept': 'application/json'
+    //   }
+    // });
     // const data = await response.json();
+    
+    // Simulate the GET request with proper structure
+    const mockRequest = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-Key': 'mock-api-key-12345'
+      }
+    };
+    
+    // Log the simulated request for debugging
+    console.log('Simulated GET request:', mockRequest);
     
     const response = await simulateServerFetch();
     return {
       success: true,
       data: response,
+      status: 200, // OK
+      statusText: 'OK',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Total-Count': response.length.toString()
+      },
       message: 'Quotes fetched successfully from server'
     };
   } catch (error) {
     return {
       success: false,
       data: [],
+      status: 500, // Internal Server Error
+      statusText: 'Internal Server Error',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       message: `Failed to fetch quotes: ${error.message}`
     };
   }
@@ -246,6 +276,62 @@ function simulateServerPost(quote) {
       }
     }, 500 + Math.random() * 1000); // 0.5-1.5 seconds delay
   });
+}
+
+// Enhanced server POST function with proper HTTP simulation
+async function postQuoteToServer(quote) {
+  try {
+    // Simulate a real fetch POST request
+    // In a real application, this would be:
+    // const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': 'Bearer ' + token
+    //   },
+    //   body: JSON.stringify(quote)
+    // });
+    
+    // Simulate the POST request with proper structure
+    const mockRequest = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-Key': 'mock-api-key-12345'
+      },
+      body: JSON.stringify(quote)
+    };
+    
+    // Log the simulated request for debugging
+    console.log('Simulated POST request:', mockRequest);
+    
+    // Call the underlying simulation
+    const response = await simulateServerPost(quote);
+    
+    return {
+      success: true,
+      data: response,
+      status: 201, // Created
+      statusText: 'Created',
+      headers: {
+        'Content-Type': 'application/json',
+        'Location': `/api/quotes/${response.id}`
+      },
+      message: 'Quote posted successfully to server'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      status: 500, // Internal Server Error
+      statusText: 'Internal Server Error',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      message: `Failed to post quote: ${error.message}`
+    };
+  }
 }
 
 // Notification system
@@ -386,15 +472,22 @@ async function addQuoteWithSync() {
   const newQuote = { text, category, source: 'local' };
   
   try {
-    // Try to sync with server first
-    const serverQuote = await simulateServerPost(newQuote);
-    newQuote.syncId = serverQuote.id;
-    newQuote.synced = true;
-    showNotification('Quote added and synced with server!', 'success');
+    // Try to sync with server using proper POST method
+    const serverResponse = await postQuoteToServer(newQuote);
+    
+    if (serverResponse.success) {
+      newQuote.syncId = serverResponse.data.id;
+      newQuote.synced = true;
+      showNotification(`Quote posted successfully! Server ID: ${serverResponse.data.id}`, 'success');
+      console.log('Server response:', serverResponse);
+    } else {
+      throw new Error(serverResponse.message);
+    }
   } catch (error) {
     // Add locally even if server sync fails
     newQuote.synced = false;
     showNotification('Quote added locally (server sync failed)', 'warning');
+    console.error('Failed to post to server:', error);
   }
   
   quotes.push(newQuote);
@@ -407,6 +500,96 @@ async function addQuoteWithSync() {
   
   // Show the new quote
   showRandomQuote();
+}
+
+// Comprehensive API testing function
+async function testAPIEndpoints() {
+  console.log('=== API Endpoint Testing ===');
+  
+  // Test GET request
+  console.log('Testing GET /api/quotes...');
+  const getResponse = await fetchQuotesFromServer();
+  console.log('GET Response:', getResponse);
+  
+  // Test POST request
+  console.log('Testing POST /api/quotes...');
+  const testQuote = {
+    text: "API Test Quote: The best way to predict the future is to create it.",
+    category: "Technology"
+  };
+  const postResponse = await postQuoteToServer(testQuote);
+  console.log('POST Response:', postResponse);
+  
+  // Simulate PUT request (update)
+  console.log('Testing PUT /api/quotes/:id...');
+  const updateResponse = await updateQuoteOnServer(1, {
+    text: "Updated quote text",
+    category: "Updated"
+  });
+  console.log('PUT Response:', updateResponse);
+  
+  // Simulate DELETE request
+  console.log('Testing DELETE /api/quotes/:id...');
+  const deleteResponse = await deleteQuoteFromServer(1);
+  console.log('DELETE Response:', deleteResponse);
+  
+  showNotification('API testing completed. Check console for details.', 'success');
+}
+
+// Simulate PUT request for updating quotes
+async function updateQuoteOnServer(id, updatedQuote) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const mockRequest = {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-API-Key': 'mock-api-key-12345'
+        },
+        body: JSON.stringify(updatedQuote)
+      };
+      
+      console.log('Simulated PUT request:', mockRequest);
+      
+      resolve({
+        success: true,
+        data: { ...updatedQuote, id },
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        message: `Quote ${id} updated successfully`
+      });
+    }, 800);
+  });
+}
+
+// Simulate DELETE request for removing quotes
+async function deleteQuoteFromServer(id) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const mockRequest = {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'X-API-Key': 'mock-api-key-12345'
+        }
+      };
+      
+      console.log('Simulated DELETE request:', mockRequest);
+      
+      resolve({
+        success: true,
+        data: null,
+        status: 204, // No Content
+        statusText: 'No Content',
+        headers: {},
+        message: `Quote ${id} deleted successfully`
+      });
+    }, 600);
+  });
 }
 
 // Attach event listeners
@@ -422,6 +605,7 @@ document.getElementById('categoryFilter').addEventListener('change', filterQuote
 // Server sync event listeners
 document.getElementById('syncNow').addEventListener('click', syncWithServer);
 document.getElementById('toggleAutoSync').addEventListener('click', toggleAutoSync);
+document.getElementById('testAPI').addEventListener('click', testAPIEndpoints);
 
 // Load quotes from localStorage on page load
 loadQuotes();
