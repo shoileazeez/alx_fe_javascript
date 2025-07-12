@@ -31,11 +31,15 @@
     button:hover {
       background-color: #0056b3;
     }
-    input[type="text"], input[type="file"] {
+    input[type="text"], input[type="file"], select {
       padding: 8px;
       margin: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
+    }
+    label {
+      font-weight: bold;
+      margin-right: 10px;
     }
     #quoteDisplay {
       min-height: 80px;
@@ -55,6 +59,15 @@
 <body>
   <div class="container">
     <h1>Dynamic Quote Generator</h1>
+    
+    <div class="controls">
+      <label for="categoryFilter">Filter by Category:</label>
+      <select id="categoryFilter">
+        <option value="all">All Categories</option>
+        <!-- Dynamically populated categories -->
+      </select>
+    </div>
+    
     <div id="quoteDisplay"></div>
     <button id="newQuote">Show New Quote</button>
     
