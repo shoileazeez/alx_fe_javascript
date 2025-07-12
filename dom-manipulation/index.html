@@ -54,11 +54,69 @@
       gap: 10px;
       align-items: center;
     }
+    #syncStatus {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .sync-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .sync-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .sync-warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      color: white;
+      font-weight: bold;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+    }
+    .notification.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .notification.success {
+      background-color: #28a745;
+    }
+    .notification.error {
+      background-color: #dc3545;
+    }
+    .notification.warning {
+      background-color: #ffc107;
+      color: #000;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Dynamic Quote Generator</h1>
+    
+    <div class="container">
+      <h3>Server Sync</h3>
+      <div class="controls">
+        <button id="syncNow">Sync with Server</button>
+        <button id="toggleAutoSync">Enable Auto-Sync</button>
+        <span id="lastSyncTime">Never synced</span>
+      </div>
+      <div id="syncStatus" style="display: none;"></div>
+    </div>
     
     <div class="controls">
       <label for="categoryFilter">Filter by Category:</label>
@@ -89,6 +147,9 @@
       </div>
     </div>
   </div>
+  
+  <!-- Notification container -->
+  <div id="notification" class="notification"></div>
   
   <script src="script.js"></script>
 </body>
