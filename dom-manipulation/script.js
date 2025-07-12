@@ -213,6 +213,29 @@ function simulateServerFetch() {
   });
 }
 
+// Standard API function to fetch quotes from server
+async function fetchQuotesFromServer() {
+  try {
+    // Simulate fetching from a real API endpoint like JSONPlaceholder
+    // In a real application, this would be something like:
+    // const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+    // const data = await response.json();
+    
+    const response = await simulateServerFetch();
+    return {
+      success: true,
+      data: response,
+      message: 'Quotes fetched successfully from server'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: [],
+      message: `Failed to fetch quotes: ${error.message}`
+    };
+  }
+}
+
 function simulateServerPost(quote) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -254,7 +277,13 @@ async function syncWithServer() {
   try {
     updateSyncStatus('Syncing with server...', 'warning');
     
-    const serverQuotes = await simulateServerFetch();
+    const serverResponse = await fetchQuotesFromServer();
+    
+    if (!serverResponse.success) {
+      throw new Error(serverResponse.message);
+    }
+    
+    const serverQuotes = serverResponse.data;
     const conflicts = [];
     let newQuotes = 0;
     
