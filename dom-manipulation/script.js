@@ -451,7 +451,7 @@ async function syncQuotes() {
     } else {
       showNotification('Quotes synced with server! No new updates.', 'success');
     }
-    
+
     updateSyncStatus(message, 'success');
     
     // Refresh display if needed
