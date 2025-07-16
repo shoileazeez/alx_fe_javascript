@@ -447,9 +447,9 @@ async function syncQuotes() {
       showNotification(`${message}. Server data took precedence for conflicts.`, 'warning');
       showConflictResolutionDialog(syncResults.conflicts);
     } else if (syncResults.newQuotes > 0) {
-      showNotification(message, 'success');
+      showNotification('Quotes synced with server!', 'success');
     } else {
-      showNotification('No new quotes to sync.', 'success');
+      showNotification('Quotes synced with server! No new updates.', 'success');
     }
     
     updateSyncStatus(message, 'success');

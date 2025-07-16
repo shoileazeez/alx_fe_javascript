@@ -102,6 +102,37 @@
       background-color: #ffc107;
       color: #000;
     }
+    .sync-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-left: 10px;
+      position: relative;
+    }
+    .sync-indicator.synced {
+      background-color: #28a745;
+    }
+    .sync-indicator.syncing {
+      background-color: #ffc107;
+      animation: pulse 1.5s infinite;
+    }
+    .sync-indicator.error {
+      background-color: #dc3545;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .conflict-count {
+      background-color: #dc3545;
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
