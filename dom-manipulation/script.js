@@ -358,11 +358,12 @@ function updateSyncStatus(message, type = 'success') {
   lastSyncTime.textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
 }
 
-// Data syncing logic
-async function syncWithServer() {
+// Dedicated sync quotes function with enhanced conflict resolution
+async function syncQuotes() {
   try {
-    updateSyncStatus('Syncing with server...', 'warning');
+    updateSyncStatus('Synchronizing quotes with server...', 'warning');
     
+    // Fetch latest quotes from server
     const serverResponse = await fetchQuotesFromServer();
     
     if (!serverResponse.success) {
@@ -370,66 +371,111 @@ async function syncWithServer() {
     }
     
     const serverQuotes = serverResponse.data;
-    const conflicts = [];
-    let newQuotes = 0;
+    const syncResults = {
+      newQuotes: 0,
+      conflicts: [],
+      duplicates: 0,
+      updated: 0
+    };
     
-    // Check for conflicts and new quotes
+    // Store original local quotes for backup
+    const originalQuotes = JSON.parse(JSON.stringify(quotes));
+    
+    // Check for new quotes and conflicts
     serverQuotes.forEach(serverQuote => {
       const existingQuote = quotes.find(q => 
-        q.text.toLowerCase() === serverQuote.text.toLowerCase()
+        q.text.toLowerCase().trim() === serverQuote.text.toLowerCase().trim()
       );
       
       if (!existingQuote) {
-        // New quote from server
+        // New quote from server - add it
         quotes.push({
           text: serverQuote.text,
           category: serverQuote.category,
           source: 'server',
-          syncId: serverQuote.id
+          syncId: serverQuote.id,
+          lastSynced: new Date().toISOString()
         });
-        newQuotes++;
-      } else if (existingQuote.category !== serverQuote.category) {
-        // Conflict detected
-        conflicts.push({
-          local: existingQuote,
-          server: serverQuote
-        });
+        syncResults.newQuotes++;
+      } else {
+        // Check for conflicts (same text, different category)
+        if (existingQuote.category !== serverQuote.category) {
+          syncResults.conflicts.push({
+            local: { ...existingQuote },
+            server: { ...serverQuote },
+            resolution: 'server-precedence'
+          });
+          
+          // Update with server data (server takes precedence)
+          const index = quotes.findIndex(q => q.text === existingQuote.text);
+          if (index !== -1) {
+            quotes[index].category = serverQuote.category;
+            quotes[index].resolvedConflict = true;
+            quotes[index].conflictTimestamp = new Date().toISOString();
+            quotes[index].lastSynced = new Date().toISOString();
+            syncResults.updated++;
+          }
+        } else {
+          // Same quote, same category - just update sync info
+          const index = quotes.findIndex(q => q.text === existingQuote.text);
+          if (index !== -1) {
+            quotes[index].lastSynced = new Date().toISOString();
+            if (!quotes[index].syncId) {
+              quotes[index].syncId = serverQuote.id;
+            }
+          }
+          syncResults.duplicates++;
+        }
       }
     });
     
-    // Handle conflicts - server data takes precedence
-    if (conflicts.length > 0) {
-      conflicts.forEach(conflict => {
-        const index = quotes.findIndex(q => q.text === conflict.local.text);
-        if (index !== -1) {
-          quotes[index].category = conflict.server.category;
-          quotes[index].resolvedConflict = true;
-        }
-      });
-      
-      showNotification(`Resolved ${conflicts.length} conflict(s). Server data took precedence.`, 'warning');
-    }
-    
-    if (newQuotes > 0) {
-      showNotification(`Added ${newQuotes} new quote(s) from server.`, 'success');
-    }
-    
-    // Save updated quotes
+    // Update local storage with synchronized data
     saveQuotes();
     populateCategories();
     
-    updateSyncStatus(`Sync completed. ${newQuotes} new quotes, ${conflicts.length} conflicts resolved.`, 'success');
+    // Create detailed notification message
+    let message = `Sync completed: ${syncResults.newQuotes} new quotes`;
+    if (syncResults.conflicts.length > 0) {
+      message += `, ${syncResults.conflicts.length} conflicts resolved`;
+    }
+    if (syncResults.updated > 0) {
+      message += `, ${syncResults.updated} quotes updated`;
+    }
     
-    // Refresh display if showing all quotes
+    // Show appropriate notifications
+    if (syncResults.conflicts.length > 0) {
+      showNotification(`${message}. Server data took precedence for conflicts.`, 'warning');
+      showConflictResolutionDialog(syncResults.conflicts);
+    } else if (syncResults.newQuotes > 0) {
+      showNotification(message, 'success');
+    } else {
+      showNotification('No new quotes to sync.', 'success');
+    }
+    
+    updateSyncStatus(message, 'success');
+    
+    // Refresh display if needed
     const categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter.value === 'all') {
+    if (categoryFilter && categoryFilter.value === 'all') {
       showRandomQuote();
     }
     
+    // Log sync details for debugging
+    console.log('Sync completed:', syncResults);
+    
+    return syncResults;
+    
   } catch (error) {
     updateSyncStatus(`Sync failed: ${error.message}`, 'error');
-    showNotification('Failed to sync with server', 'error');
+    showNotification('Failed to sync quotes with server', 'error');
+    console.error('Sync error:', error);
+    throw error;
   }
+}
+
+// Legacy function for backward compatibility
+async function syncWithServer() {
+  return await syncQuotes();
 }
 
 // Auto-sync functionality
